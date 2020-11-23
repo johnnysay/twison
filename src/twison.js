@@ -87,6 +87,30 @@ var Twison = {
   },
 
   /**
+   * Extract the author from the provided text.
+   *
+   * A provided @Foo@ author would yield an object of `Foo`.
+   *
+   * @param {String} text
+   *   The text to examine.
+   *
+   * @return {Object|null}
+   *   An object containing the name of the author.
+   */
+  extractAuthorFromText: function(text) {
+    var author = text.match(/@.*?@/);
+
+    if (!author) {
+      return null;
+    } else {
+      return author.map(function(name) {
+        var rawAuthor = name.replace(/@/g, '');
+        return rawAuthor;
+      })[0];
+    }
+  },
+
+  /**
    * Convert an entire passage.
    *
    * @param {Object} passage
@@ -109,6 +133,11 @@ var Twison = {
       dict.props = props;
     }
 
+    const author = Twison.extractAuthorFromText(dict.text);
+    if (author) {
+        dict.author = author;
+    }
+
     ["name", "pid", "position", "tags"].forEach(function(attr) {
       var value = passage.attributes[attr].value;
       if (value) {
@@ -116,7 +145,7 @@ var Twison = {
       }
     });
 
-    if(dict.position) {
+    if (dict.position) {
       var position = dict.position.split(',')
       dict.position = {
         x: position[0],
@@ -128,8 +157,19 @@ var Twison = {
       dict.tags = dict.tags.split(" ");
     }
 
+    dict.text = Twison.postProcessText(dict.text);
+
     return dict;
 	},
+
+   postProcessText: function(text) {
+    return text
+    .replace(/\[\[(.*?)(.*?)\]\]/gm, '')
+    .replace(/@.*?@/gm, '')
+    .trim()
+    .split(/\r?\n/)
+    .map(function(str) { return str.trim(); });
+   },
 
   /**
    * Convert an entire story.
